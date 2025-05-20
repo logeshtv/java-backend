@@ -22,7 +22,7 @@ public class userServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    
+
     @Autowired
     public userServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
@@ -34,13 +34,13 @@ public class userServiceImpl implements UserService {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new EmailAlreadyExistsException("Email already in use");
         }
-        
+
         User user = new User();
         user.setName(request.getName());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(request.getRole());
-        
+
         return userRepository.save(user);
     }
 
@@ -54,45 +54,69 @@ public class userServiceImpl implements UserService {
     public User createTeamLeader(RegisterRequest request, UUID managerId) {
         User manager = userRepository.findById(managerId)
                 .orElseThrow(() -> new RuntimeException("Manager not found"));
-        
+
         if (manager.getRole() != User.Role.MANAGER) {
             throw new RuntimeException("Only managers can create team leaders");
         }
-        
+
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new EmailAlreadyExistsException("Email already in use");
         }
-        
+
         User teamLeader = new User();
         teamLeader.setName(request.getName());
         teamLeader.setEmail(request.getEmail());
         teamLeader.setPassword(passwordEncoder.encode(request.getPassword()));
         teamLeader.setRole(User.Role.TEAM_LEADER);
         teamLeader.setLeader(manager);
-        
+
         return userRepository.save(teamLeader);
+    }
+
+    @Override
+    public User createTeamHelpDesk(RegisterRequest request, UUID managerId) {
+        User manager = userRepository.findById(managerId)
+                .orElseThrow(() -> new RuntimeException("Manager not found"));
+
+        if (manager.getRole() != User.Role.MANAGER) {
+            throw new RuntimeException("Only managers can create team help desks");
+        }
+
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new EmailAlreadyExistsException("Email already in use");
+        }
+
+        User teamHelpDesk = new User();
+        teamHelpDesk.setName(request.getName());
+        teamHelpDesk.setEmail(request.getEmail());
+        teamHelpDesk.setPassword(passwordEncoder.encode(request.getPassword()));
+        teamHelpDesk.setRole(User.Role.HELP_DESK);
+        teamHelpDesk.setLeader(manager);
+
+        System.out.println("teamHelpDesk: " + teamHelpDesk);
+        return userRepository.save(teamHelpDesk);
     }
 
     @Override
     public User createEmployee(RegisterRequest request, UUID leaderId) {
         User leader = userRepository.findById(leaderId)
                 .orElseThrow(() -> new RuntimeException("Team leader not found"));
-        
+
         if (leader.getRole() != User.Role.TEAM_LEADER) {
             throw new RuntimeException("Only team leaders can create employees");
         }
-        
+
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new EmailAlreadyExistsException("Email already in use");
         }
-        
+
         User employee = new User();
         employee.setName(request.getName());
         employee.setEmail(request.getEmail());
         employee.setPassword(passwordEncoder.encode(request.getPassword()));
         employee.setRole(User.Role.EMPLOYEE);
         employee.setLeader(leader);
-        
+
         return userRepository.save(employee);
     }
 
@@ -100,11 +124,11 @@ public class userServiceImpl implements UserService {
     public List<UserDto> getTeamLeadersByManager(UUID managerId) {
         User manager = userRepository.findById(managerId)
                 .orElseThrow(() -> new RuntimeException("Manager not found"));
-        
+
         if (manager.getRole() != User.Role.MANAGER) {
             throw new RuntimeException("User is not a manager");
         }
-        
+
         return userRepository.findByLeaderId(managerId).stream()
                 .filter(user -> user.getRole() == User.Role.TEAM_LEADER)
                 .map(this::mapToDto)
@@ -115,11 +139,11 @@ public class userServiceImpl implements UserService {
     public List<UserDto> getEmployeesByLeader(UUID leaderId) {
         User leader = userRepository.findById(leaderId)
                 .orElseThrow(() -> new RuntimeException("Team leader not found"));
-        
+
         if (leader.getRole() != User.Role.TEAM_LEADER) {
             throw new RuntimeException("User is not a team leader");
         }
-        
+
         return userRepository.findByLeaderId(leaderId).stream()
                 .filter(user -> user.getRole() == User.Role.EMPLOYEE)
                 .map(this::mapToDto)
@@ -140,18 +164,18 @@ public class userServiceImpl implements UserService {
         }
         userRepository.deleteById(id);
     }
-    
+
     private UserDto mapToDto(User user) {
         UserDto dto = new UserDto();
         dto.setId(user.getId());
         dto.setName(user.getName());
         dto.setEmail(user.getEmail());
         dto.setRole(user.getRole());
-        
+
         if (user.getLeader() != null) {
             dto.setLeaderId(user.getLeader().getId());
         }
-        
+
         return dto;
     }
 }

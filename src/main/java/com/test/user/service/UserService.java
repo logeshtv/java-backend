@@ -10,17 +10,23 @@ import java.util.UUID;
 public interface UserService {
     // Authentication
     User registerUser(RegisterRequest request);
+
     User findByEmail(String email);
-    
+
     // User management by role
     User createTeamLeader(RegisterRequest request, UUID managerId);
+
+    User createTeamHelpDesk(RegisterRequest request, UUID managerId);
+
     User createEmployee(RegisterRequest request, UUID leaderId);
-    
+
     // User retrieval
     List<UserDto> getTeamLeadersByManager(UUID managerId);
+
     List<UserDto> getEmployeesByLeader(UUID leaderId);
-    
+
     // User operations
     UserDto getUserById(UUID id);
+
     void deleteUser(UUID id);
 }

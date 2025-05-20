@@ -31,21 +31,31 @@ public class UserController {
     @PostMapping("/managers/leaders")
     @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<?> createTeamLeader(@Valid @RequestBody RegisterRequest request,
-                                             @RequestHeader("Authorization") String token) {
+            @RequestHeader("Authorization") String token) {
         // Extract manager ID from JWT token
         UUID managerId = jwtTokenUtil.extractUserId(token.substring(7));
-        
+
         User teamLeader = userService.createTeamLeader(request, managerId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(convertToDto(teamLeader));
+    }
+
+    @PostMapping("/managers/help-desk")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<?> createTeamHelpDesk(@Valid @RequestBody RegisterRequest request,
+            @RequestHeader("Authorization") String token) {
+        UUID managerId = jwtTokenUtil.extractUserId(token.substring(7));
+
+        User teamLeader = userService.createTeamHelpDesk(request, managerId);
         return ResponseEntity.status(HttpStatus.CREATED).body(convertToDto(teamLeader));
     }
 
     @PostMapping("/leaders/employees")
     @PreAuthorize("hasRole('TEAM_LEADER')")
     public ResponseEntity<?> createEmployee(@Valid @RequestBody RegisterRequest request,
-                                           @RequestHeader("Authorization") String token) {
+            @RequestHeader("Authorization") String token) {
         // Extract leader ID from JWT token
         UUID leaderId = jwtTokenUtil.extractUserId(token.substring(7));
-        
+
         User employee = userService.createEmployee(request, leaderId);
         return ResponseEntity.status(HttpStatus.CREATED).body(convertToDto(employee));
     }
@@ -75,18 +85,18 @@ public class UserController {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
-    
+
     private UserDto convertToDto(User user) {
         UserDto dto = new UserDto();
         dto.setId(user.getId());
         dto.setName(user.getName());
         dto.setEmail(user.getEmail());
         dto.setRole(user.getRole());
-        
+
         if (user.getLeader() != null) {
             dto.setLeaderId(user.getLeader().getId());
         }
-        
+
         return dto;
     }
 }
